@@ -117,8 +117,6 @@ contract Dice2Win {
     // This event is emitted in placeBet to record commit in the logs.
     event Commit(uint commit);
 
-    event SettleCommit(uint commit);
-
     // Constructor. Deliberately does not take any parameters.
     constructor () public {
         owner = msg.sender;
@@ -234,8 +232,7 @@ contract Dice2Win {
         // Check that commit is valid - it has not expired and its signature is valid.
         require (block.number <= commitLastBlock, "Commit has expired.");
         bytes32 signatureHash = keccak256(abi.encodePacked(uint40(commitLastBlock), commit));
-        //NEED DO!!
-        //require (secretSigner == ecrecover(signatureHash, 27, r, s), "ECDSA signature is not valid.");
+        require (secretSigner == ecrecover(signatureHash, 27, r, s), "ECDSA signature is not valid.");
 
         uint rollUnder;
         uint mask;
@@ -283,24 +280,39 @@ contract Dice2Win {
         bet.gambler = msg.sender;
     }
 
+    //test Function
+    function getCommit(uint reveal) pure public returns(uint) {
+        return uint(keccak256(abi.encodePacked(reveal)));
+    }
+
+    function getSignatureHash(uint commitLastBlock, uint commit) pure public returns(bytes32) {
+        bytes32 signatureHash = keccak256(abi.encodePacked(uint40(commitLastBlock), commit));
+        return signatureHash;
+    }
+
+    function recover(uint commitLastBlock, uint commit, bytes32 r, bytes32 s)  pure public returns(address) {
+        bytes32 signatureHash = keccak256(abi.encodePacked(uint40(commitLastBlock), commit));
+        return ecrecover(signatureHash, 27, r, s);
+    }
+    
+
     // This is the method used to settle 99% of bets. To process a bet with a specific
     // "commit", settleBet should supply a "reveal" number that would Keccak256-hash to
     // "commit". "blockHash" is the block hash of placeBet block as seen by croupier; it
     // is additionally asserted to prevent changing the bet outcomes on Ethereum reorgs.
     function settleBet(uint reveal, bytes32 blockHash) external onlyCroupier {
         uint commit = uint(keccak256(abi.encodePacked(reveal)));
-        emit SettleCommit(commit);
 
-        // Bet storage bet = bets[commit];
-        // uint placeBlockNumber = bet.placeBlockNumber;
+        Bet storage bet = bets[commit];
+        uint placeBlockNumber = bet.placeBlockNumber;
 
-        // // Check that bet has not expired yet (see comment to BET_EXPIRATION_BLOCKS).
-        // require (block.number > placeBlockNumber, "settleBet in the same block as placeBet, or before.");
-        // require (block.number <= placeBlockNumber + BET_EXPIRATION_BLOCKS, "Blockhash can't be queried by EVM.");
-        // require (blockhash(placeBlockNumber) == blockHash);
+        // Check that bet has not expired yet (see comment to BET_EXPIRATION_BLOCKS).
+        require (block.number > placeBlockNumber, "settleBet in the same block as placeBet, or before.");
+        require (block.number <= placeBlockNumber + BET_EXPIRATION_BLOCKS, "Blockhash can't be queried by EVM.");
+        require (blockhash(placeBlockNumber) == blockHash);
 
-        // // Settle bet using reveal and blockHash as entropy sources.
-        // settleBetCommon(bet, reveal, blockHash);
+        // Settle bet using reveal and blockHash as entropy sources.
+        settleBetCommon(bet, reveal, blockHash);
     }
 
     // This method is used to settle a bet that was mined into an uncle block. At this

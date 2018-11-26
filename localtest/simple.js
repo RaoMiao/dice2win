@@ -1,9 +1,9 @@
 ﻿var Dice2Win = artifacts.require("./Dice2Win.sol");
 var BigNumber = require('bignumber.js');
 
-const mainAccount = "0x13Afd24848f08a06Ac21c9320aA6217BC9a7c9D1";
-const SecretSigner = "0x13Afd24848f08a06Ac21c9320aA6217BC9a7c9D1";
-const Croupier = "0x13Afd24848f08a06Ac21c9320aA6217BC9a7c9D1";
+const mainAccount = "0x0A0802280ECEFC7d44b35E98a571F53eCDd80d2d";
+const SecretSigner = "0x0A0802280ECEFC7d44b35E98a571F53eCDd80d2d";
+const Croupier = "0x0A0802280ECEFC7d44b35E98a571F53eCDd80d2d";
 
 var Dice2WinInstance;
 
@@ -12,8 +12,8 @@ async function SetupInstance() {
 }
 
 var playerlist = [ 
-    '0xB9B2cf809241A1Ee1Cc1b985f0bD8bd875aE8671',
-    '0xD424eaf9625C25125eA966eD8361D56Ae29b32c2',
+    '0x08bF6cad34292f41073448B3324C448c78986716',
+    '0x9a00Ae2281E537785828669c723a92f1F0d32C57',
 ];
 
 var randomNumber = 0;
@@ -22,19 +22,42 @@ async function generateNumber() {
     randomNumber = randomNumber + 1;
 }
 
+
+
+function stringToBytes (str) {  
+        var ch, st, re = [];   
+        for (var i = 0; i < str.length; i++ ) {     
+            ch = str.charCodeAt(i);   
+            st = [];         
+            do {      
+                 st.push( ch & 0xFF ); 
+                 ch = ch >> 8;
+            } while ( ch );
+            re = re.concat( st.reverse() );   
+         }   // return an array of bytes   
+         return re;
+}
+
 async function PlayDice(playerAccount) {
     generateNumber();
     var betMask = 40;
     var modulo = 100;
     var currentBlockNumber = await web3.eth.blockNumber;
     var commitLastBlock = currentBlockNumber + 100;
-    console.log(String(randomNumber));
-    var shaRandomNumber = web3.sha3(randomNumber."EVWithdraw(address,uint256,bytes32)".getBytes(StandardCharsets.UTF_8));
-    var keccak256Number = web3.toDecimal(shaRandomNumber);
-    console.log(keccak256Number)
-    var r = "00"
-    var s = "00"
-
+    var shaRandomNumber = await Dice2WinInstance.getCommit(randomNumber);
+    var signatureHash = await Dice2WinInstance.getSignatureHash(commitLastBlock, shaRandomNumber);
+    var result = await web3.eth.sign(SecretSigner, String(signatureHash)); 
+    console.log(result);
+ 
+    result = result.substr(2, result.length);
+    var r =  result.substr(0, 64);
+    var s =  result.substr(64, 64);
+    let v = web3.toDecimal(result.substr(128, 2)) + 27;
+    r = stringToBytes(r);
+    console.log(r);
+    s = stringToBytes(s);
+    var returnaddress = await Dice2WinInstance.recover(commitLastBlock, shaRandomNumber, r, s)
+    console.log(returnaddress);
 
     result = null;
     try {
@@ -63,7 +86,7 @@ async function PlayDice(playerAccount) {
         console.log(result);
         throw result;
     }
-    console.log(result.logs[0].args);
+    console.log(result);
 }
 
 

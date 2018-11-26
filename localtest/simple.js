@@ -29,7 +29,7 @@ async function PlayDice(playerAccount) {
     var currentBlockNumber = await web3.eth.blockNumber;
     var commitLastBlock = currentBlockNumber + 100;
     console.log(String(randomNumber));
-    var shaRandomNumber = web3.sha3(String(randomNumber));
+    var shaRandomNumber = web3.sha3(randomNumber."EVWithdraw(address,uint256,bytes32)".getBytes(StandardCharsets.UTF_8));
     var keccak256Number = web3.toDecimal(shaRandomNumber);
     console.log(keccak256Number)
     var r = "00"

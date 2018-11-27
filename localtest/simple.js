@@ -1,5 +1,6 @@
 ﻿var Dice2Win = artifacts.require("./Dice2Win.sol");
 var BigNumber = require('bignumber.js');
+var utils = require('ethereumjs-util');
 
 const mainAccount = "0x0A0802280ECEFC7d44b35E98a571F53eCDd80d2d";
 const SecretSigner = "0x0A0802280ECEFC7d44b35E98a571F53eCDd80d2d";
@@ -45,8 +46,9 @@ async function PlayDice(playerAccount) {
     var currentBlockNumber = await web3.eth.blockNumber;
     var commitLastBlock = currentBlockNumber + 100;
     var shaRandomNumber = await Dice2WinInstance.getCommit(randomNumber);
-    var signatureHash = await Dice2WinInstance.getSignatureHash(commitLastBlock, shaRandomNumber);
-    var result = await web3.eth.sign(SecretSigner, String(signatureHash)); 
+    var signatureHash = await Dice2WinInstance.getSignatureHash(commitLastBlock, shaRandomNumber);  
+    var result = await web3.eth.sign(SecretSigner, signatureHash); 
+    var messageBuffer = new Buffer(signatureHash, 'hex');
     console.log(result);
  
     result = result.substr(2, result.length);
@@ -58,6 +60,18 @@ async function PlayDice(playerAccount) {
     s = stringToBytes(s);
     var returnaddress = await Dice2WinInstance.recover(commitLastBlock, shaRandomNumber, r, s)
     console.log(returnaddress);
+
+    var r1 = new Buffer(result.substring(0, 64), 'hex')
+    var s1 = new Buffer(result.substring(64, 128), 'hex')
+    var v1 = new Buffer((parseInt(result.substring(128, 130)) + 27).toString());
+    console.log(r1);
+    console.log(s1);    
+    var pub = utils.ecrecover(messageBuffer, v1, r1, s1);
+
+
+    var recoveredAddress = '0x' + utils.pubToAddress(pub).toString('hex')
+
+    console.log('recoveredAddress: ',   recoveredAddress);
 
     result = null;
     try {

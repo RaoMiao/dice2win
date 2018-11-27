@@ -290,11 +290,14 @@ contract Dice2Win {
         return signatureHash;
     }
 
-    function recover(uint commitLastBlock, uint commit, bytes32 r, bytes32 s)  pure public returns(address) {
+    function recover(uint commitLastBlock, uint commit, bytes32 r, bytes32 s)  pure public returns(address) {          
         bytes32 signatureHash = keccak256(abi.encodePacked(uint40(commitLastBlock), commit));
         return ecrecover(signatureHash, 27, r, s);
-    }
-    
+    } 
+
+    function recover2(bytes32 signatureHash, bytes32 r, bytes32 s)  pure public returns(address) {
+        return ecrecover(signatureHash, 27, r, s);
+    } 
 
     // This is the method used to settle 99% of bets. To process a bet with a specific
     // "commit", settleBet should supply a "reveal" number that would Keccak256-hash to

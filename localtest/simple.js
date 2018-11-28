@@ -3,9 +3,9 @@ var BigNumber = require('bignumber.js');
 var utils = require('ethereumjs-util');
 
 
-const mainAccount = "0x13Afd24848f08a06Ac21c9320aA6217BC9a7c9D1";
-const SecretSigner = "0x13Afd24848f08a06Ac21c9320aA6217BC9a7c9D1";
-const Croupier = "0x13Afd24848f08a06Ac21c9320aA6217BC9a7c9D1";
+const mainAccount = "0x0A0802280ECEFC7d44b35E98a571F53eCDd80d2d";
+const SecretSigner = "0x0A0802280ECEFC7d44b35E98a571F53eCDd80d2d";
+const Croupier = "0x0A0802280ECEFC7d44b35E98a571F53eCDd80d2d";
 
 var Dice2WinInstance;
 
@@ -14,8 +14,8 @@ async function SetupInstance() {
 }
 
 var playerlist = [ 
-    '0xB9B2cf809241A1Ee1Cc1b985f0bD8bd875aE8671',
-    '0xD424eaf9625C25125eA966eD8361D56Ae29b32c2',
+    '0x08bF6cad34292f41073448B3324C448c78986716',
+    '0x9a00Ae2281E537785828669c723a92f1F0d32C57',
 ];
 
 var randomNumber = 0;
@@ -40,7 +40,29 @@ function stringToBytes (str) {  
          return re;
 }
 
+function check() {
+    var privkey = new Buffer('3c9229289a6125f7fdf1885a77bb12c37a8d3b4962d936f7e3084dece32a3ca1', 'hex');
+    var data = utils.keccak('a');
+    console.log(data)
+    var vrs = utils.ecsign(data, privkey);
+    var pubkey = utils.ecrecover(data, vrs.v, vrs.r, vrs.s);
+    // Check !
+    var check1 = pubkey.toString('hex') ==
+    utils.privateToPublic(privkey).toString('hex');
+    var check2 = utils.publicToAddress(pubkey).toString('hex') ==
+    utils.privateToAddress(privkey).toString('hex');
 
+    console.log(check1);
+    console.log(check2);
+}
+
+function printObj(_obj) {
+    var property = ""; 
+    for (var item in _obj) {
+        property += "属性：" + item + "数值：" + _obj[item] + "\n";
+    }
+    console.log(property);
+}
 
 async function PlayDice(playerAccount) {
     generateNumber();
@@ -49,21 +71,29 @@ async function PlayDice(playerAccount) {
     var currentBlockNumber = await web3.eth.blockNumber;
     var commitLastBlock = currentBlockNumber + 100;
     var shaRandomNumber = await Dice2WinInstance.getCommit(randomNumber);
-    var signatureHash = await Dice2WinInstance.getSignatureHash(commitLastBlock, shaRandomNumber);  
-    var result = await web3.eth.sign(SecretSigner, signatureHash); 
- 
-    result = result.substr(2, result.length);
-    console.log(result)
-    var r =  '0x' + (result.substr(0, 64));
-    var s =  '0x' + (result.substr(64, 64));
-    let v = web3.toDecimal(result.substr(128, 2)) + 27;
-    console.log(r)
-    console.log(s)
-    // var returnaddress = await Dice2WinInstance.recover(commitLastBlock, shaRandomNumber, r, s)
-    // console.log(returnaddress);
 
-    var returnaddress = await Dice2WinInstance.recover2(signatureHash, r, s)
+    var privkey = new Buffer('c783a1d36860d5bc55e1f1b30ce3d0bebe4073c21f363e697ce35b47ccdac723', 'hex');
+    var signatureHash = await Dice2WinInstance.getSignatureHash(shaRandomNumber);
+    //printObj(signatureHash)
+    var signatureHash2 = await Dice2WinInstance.getSignatureHash2(randomNumber);
+    //printObj(signatureHash2)
+    var bytes = web3.fromAscii(signatureHash);
+    printObj(bytes);
+
+    var data = utils.keccak(utils.keccak(randomNumber));
+    //printObj(data.toString())
+
+    var vrs = utils.ecsign(data, privkey);
+    //console.log(vrs);
+    var r = vrs.r.toString();
+    var s = vrs.s.toString();
+    //console.log(r)
+    //console.log(s)
+    
+    
+    var returnaddress = await Dice2WinInstance.recover(commitLastBlock, shaRandomNumber, r, s)
     console.log(returnaddress);
+
 
     result = null;
     try {
@@ -106,6 +136,7 @@ async function DoMyTest() {
     await SetupInstance();
     //await TestSignature();
 
+    //check();
     await EveryOneWantPlayDice();
 }
 

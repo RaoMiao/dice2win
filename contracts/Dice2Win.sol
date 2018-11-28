@@ -231,7 +231,8 @@ contract Dice2Win {
 
         // Check that commit is valid - it has not expired and its signature is valid.
         require (block.number <= commitLastBlock, "Commit has expired.");
-        bytes32 signatureHash = keccak256(abi.encodePacked(uint40(commitLastBlock), commit));
+        //bytes32 signatureHash = keccak256(abi.encodePacked(uint40(commitLastBlock), commit));
+        bytes32 signatureHash = keccak256(abi.encodePacked(commit));        
         require (secretSigner == ecrecover(signatureHash, 27, r, s), "ECDSA signature is not valid.");
 
         uint rollUnder;
@@ -285,19 +286,21 @@ contract Dice2Win {
         return uint(keccak256(abi.encodePacked(reveal)));
     }
 
-    function getSignatureHash(uint commitLastBlock, uint commit) pure public returns(bytes32) {
-        bytes32 signatureHash = keccak256(abi.encodePacked(uint40(commitLastBlock), commit));
+    function getSignatureHash2(uint reveal) pure public returns(bytes32) {
+        bytes32 signatureHash = keccak256(abi.encodePacked(uint(keccak256(abi.encodePacked(reveal)))));
         return signatureHash;
     }
 
-    function recover(uint commitLastBlock, uint commit, bytes32 r, bytes32 s)  pure public returns(address) {          
-        bytes32 signatureHash = keccak256(abi.encodePacked(uint40(commitLastBlock), commit));
-        return ecrecover(signatureHash, 27, r, s);
-    } 
+    function getSignatureHash(uint commit) pure public returns(bytes32) {
+        bytes32 signatureHash = keccak256(abi.encodePacked(commit));
+        return signatureHash;
+    }
 
-    function recover2(bytes32 signatureHash, bytes32 r, bytes32 s)  pure public returns(address) {
+    function recover( uint commitLastBlock, uint commit, bytes32 r, bytes32 s) public pure returns(address) {
+        //bytes32 signatureHash = keccak256(abi.encodePacked(uint40(commitLastBlock), commit));
+        bytes32 signatureHash = keccak256(abi.encodePacked(commit));        
         return ecrecover(signatureHash, 27, r, s);
-    } 
+    }
 
     // This is the method used to settle 99% of bets. To process a bet with a specific
     // "commit", settleBet should supply a "reveal" number that would Keccak256-hash to
